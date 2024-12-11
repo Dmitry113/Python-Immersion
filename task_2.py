@@ -31,3 +31,4 @@ def get_all(num1: int, *args, **kwargs) -> int:
 
 if __name__ == '__main__':
     get_all(5, 2, 3, 'str', x=5, y=8)
+    
