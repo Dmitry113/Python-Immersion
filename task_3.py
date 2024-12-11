@@ -1,5 +1,5 @@
 # Задание №3
-#
+
 # Доработаем задачу 2.
 # Сохраняйте в лог файл раздельно:
 # ○ уровень логирования,
@@ -8,30 +8,69 @@
 # ○ аргументы вызова,
 # ○ результат.
 
-from typing import Callable
 import logging
+from functools import wraps
 
+# Настройка логгирования
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    filename="function_calls.log",
+    filemode="a"
+)
+logger = logging.getLogger("function_logger")
 
-FORMAT = '{levelname:<8} - {asctime}. {msg}'
-
-logging.basicConfig(format=FORMAT, filename='info.log', filemode='a', style='{', encoding='utf-8', level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
-def my_logger(func: Callable):
+def log_function_call(func):
+    """
+    Декоратор для логирования вызовов функции, её аргументов и результата работы.
+    Логируются раздельно:
+    - уровень логирования
+    - дата события
+    - имя функции
+    - аргументы вызова
+    - результат
+    """
+    @wraps(func)
     def wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        info_dict = {'args': args, **kwargs, 'result': result}
-        logger.info(f'Функция - {func.__name__}(), аргументы: {info_dict}, результат - {result}')
-        return result
+        try:
+            # Выполнение оригинальной функции
+            result = func(*args, **kwargs)
+            
+            # Логируем информацию в требуемом формате
+            logger.info(
+                f"LEVEL: INFO\n"
+                f"DATE: {logging.Formatter('%(asctime)s').format(logging.LogRecord('', '', '', '', '', '', '', ''))}\n"
+                f"FUNCTION: {func.__name__}\n"
+                f"ARGS: {args}, KWARGS: {kwargs}\n"
+                f"RESULT: {result}\n"
+            )
+            return result
+        except Exception as e:
+            # Логируем исключение
+            logger.error(
+                f"LEVEL: ERROR\n"
+                f"DATE: {logging.Formatter('%(asctime)s').format(logging.LogRecord('', '', '', '', '', '', '', ''))}\n"
+                f"FUNCTION: {func.__name__}\n"
+                f"ARGS: {args}, KWARGS: {kwargs}\n"
+                f"ERROR: {e}\n"
+            )
+            raise
 
     return wrapper
 
+# Пример использования
+@log_function_call
+def add(a, b):
+    return a + b
 
-@my_logger
-def get_all(num1: int, *args, **kwargs) -> int:
-    return num1
+@log_function_call
+def divide(a, b):
+    return a / b
 
+if __name__ == "__main__":
+    add(10, 20)
+    try:
+        divide(10, 0)  # Пример с делением на ноль
+    except ZeroDivisionError:
+        pass
 
-if __name__ == '__main__':
-    get_all(5, 2, 3, 'str', x=5, y=8)

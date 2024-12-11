@@ -1,5 +1,5 @@
 # Задание №2
-#
+
 # На семинаре про декораторы был создан логирующий
 # декоратор. Он сохранял аргументы функции и результат её
 # работы в файл.
@@ -7,27 +7,51 @@
 # модуль logging.
 
 
-from typing import Callable
 import logging
+from functools import wraps
 
-logging.basicConfig(filename='info.log', filemode='a', encoding='utf-8', level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Настройка логгирования
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    filename="function_calls.log",
+    filemode="a"
+)
+logger = logging.getLogger("function_logger")
 
-
-def my_logger(func: Callable):
+def log_function_call(func):
+    """
+    Декоратор для логирования вызовов функции, её аргументов и результата работы.
+    """
+    @wraps(func)
     def wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        info_dict = {'args': args, **kwargs, 'result': result}
-        logger.info(info_dict)
-        return result
+        # Логируем аргументы функции
+        logger.debug(f"Called {func.__name__} with args: {args}, kwargs: {kwargs}")
+        
+        try:
+            result = func(*args, **kwargs)  # Выполнение оригинальной функции
+            # Логируем результат функции
+            logger.debug(f"{func.__name__} returned: {result}")
+            return result
+        except Exception as e:
+            # Логируем исключения
+            logger.error(f"Exception in {func.__name__}: {e}")
+            raise
 
     return wrapper
 
+# Пример использования
+@log_function_call
+def add(a, b):
+    return a + b
 
-@my_logger
-def get_all(num1: int, *args, **kwargs) -> int:
-    return num1
+@log_function_call
+def divide(a, b):
+    return a / b
 
-
-if __name__ == '__main__':
-    get_all(5, 2, 3, 'str', x=5, y=8)
+if __name__ == "__main__":
+    add(10, 20)
+    try:
+        divide(10, 0)  # Пример с делением на ноль
+    except ZeroDivisionError:
+        pass

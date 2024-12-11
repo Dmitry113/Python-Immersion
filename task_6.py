@@ -1,5 +1,5 @@
 # Задание №6
-#
+
 # Напишите код, который запускается из командной строки и получает на вход
 # путь до директории на ПК.
 # Соберите информацию о содержимом в виде объектов namedtuple.
@@ -12,77 +12,52 @@
 # логирование.
 
 
-# import argparse
-# from pathlib import Path
-# import logging
-# from collections import namedtuple
-#
-#
-# logging.basicConfig(filename='info_6.log', filemode='a', encoding='utf-8', level=logging.INFO)
-# logger = logging.getLogger(__name__)
-#
-# File = namedtuple('File', 'name, extension, dir, parent')
-#
-#
-# def read_dir(path: Path) -> None:
-#     for file in path.iterdir():
-#         obj = File(file.stem if file.is_file() else file.name, file.suffix, file.is_dir(), file.parent)
-#         logger.info(obj)
-#         if obj.dir:
-#             read_dir(Path(obj.parent)/obj.name)
-#
-#
-# def walker():
-#     parser = argparse.ArgumentParser(
-#         description='Сохраняем данные о каталоге в файл',
-#         prog='read_dir()')
-#     parser.add_argument('-p', '--path', type=Path, required=True, help='Введите путь: ')
-#     args = parser.parse_args()
-#     return read_dir(args.path)
-#
-#
-# if __name__ == '__main__':
-#     walker()
-
-import argparse
-from pathlib import Path
+import os
 import logging
 from collections import namedtuple
 
-logging.basicConfig(filename='info_6.log', filemode='a', encoding='utf-8', level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Настройка логгирования
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    filename="directory_info.log",
+    filemode="a",
+    encoding="utf-8"
+)
 
-File = namedtuple('File', 'name extension is_dir parent')
+# Определение структуры данных для хранения информации о файле или каталоге
+FileInfo = namedtuple('FileInfo', ['name', 'extension', 'is_directory', 'parent_directory'])
 
-
-def read_dir(path: Path, visited=None) -> None:
-    if visited is None:
-        visited = set()
-
-    if path in visited:
+def gather_directory_info(directory_path):
+    """
+    Собирает информацию о содержимом директории и сохраняет ее в лог.
+    """
+    if not os.path.exists(directory_path):
+        logging.error(f"Directory {directory_path} does not exist.")
         return
-    visited.add(path)
 
-    if not path.exists():
-        logger.error(f"Путь {path} не существует.")
-        return
-    if not path.is_dir():
-        logger.error(f"Путь {path} не является директорией.")
-        return
+    logging.info(f"Gathering information for directory: {directory_path}")
+    
+    for root, dirs, files in os.walk(directory_path):
+        parent_directory = os.path.basename(root)
+        
+        # Логируем информацию о каталогах
+        for dir_name in dirs:
+            dir_info = FileInfo(name=dir_name, extension=None, is_directory=True, parent_directory=parent_directory)
+            logging.info(f"Directory: {dir_info}")
+        
+        # Логируем информацию о файлах
+        for file_name in files:
+            name, extension = os.path.splitext(file_name)
+            file_info = FileInfo(name=name, extension=extension.lstrip('.'), is_directory=False, parent_directory=parent_directory)
+            logging.info(f"File: {file_info}")
 
-    for file in path.iterdir():
-        obj = File(file.stem if file.is_file() else file.name, file.suffix, file.is_dir(), file.parent)
-        logger.info(obj)
-        if obj.is_dir:
-            read_dir(Path(obj.parent) / obj.name, visited)
+def main():
+    # Получаем путь директории от командной строки
+    directory_path = input("Enter the directory path: ").strip()
+    
+    # Собираем информацию о содержимом директории
+    gather_directory_info(directory_path)
 
-
-def walker():
-    parser = argparse.ArgumentParser(description='Сохраняем данные о каталоге в файл')
-    parser.add_argument('-p', '--path', type=Path, required=True, help='Введите путь: ')
-    args = parser.parse_args()
-    read_dir(args.path)
-
-
-if __name__ == '__main__':
-    walker()
+if __name__ == "__main__":
+    main()
