@@ -8,69 +8,47 @@
 # ○ аргументы вызова,
 # ○ результат.
 
+from typing import Callable
 import logging
-from functools import wraps
 
-# Настройка логгирования
+# Настройка логирования
 logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    filename="function_calls.log",
-    filemode="a"
+    filename='info.log', 
+    filemode='a', 
+    encoding='utf-8', 
+    level=logging.INFO,
+    format="%(levelname)s - %(asctime)s - %(message)s"
 )
-logger = logging.getLogger("function_logger")
+logger = logging.getLogger(__name__)
 
-def log_function_call(func):
-    """
-    Декоратор для логирования вызовов функции, её аргументов и результата работы.
-    Логируются раздельно:
-    - уровень логирования
-    - дата события
-    - имя функции
-    - аргументы вызова
-    - результат
-    """
-    @wraps(func)
+def my_logger(func: Callable):
     def wrapper(*args, **kwargs):
-        try:
-            # Выполнение оригинальной функции
-            result = func(*args, **kwargs)
-            
-            # Логируем информацию в требуемом формате
-            logger.info(
-                f"LEVEL: INFO\n"
-                f"DATE: {logging.Formatter('%(asctime)s').format(logging.LogRecord('', '', '', '', '', '', '', ''))}\n"
-                f"FUNCTION: {func.__name__}\n"
-                f"ARGS: {args}, KWARGS: {kwargs}\n"
-                f"RESULT: {result}\n"
-            )
-            return result
-        except Exception as e:
-            # Логируем исключение
-            logger.error(
-                f"LEVEL: ERROR\n"
-                f"DATE: {logging.Formatter('%(asctime)s').format(logging.LogRecord('', '', '', '', '', '', '', ''))}\n"
-                f"FUNCTION: {func.__name__}\n"
-                f"ARGS: {args}, KWARGS: {kwargs}\n"
-                f"ERROR: {e}\n"
-            )
-            raise
+        # Получаем имя функции
+        function_name = func.__name__
+        # Вызываем оригинальную функцию
+        result = func(*args, **kwargs)
+        # Формируем информацию для записи в лог
+        info_dict = {
+            'function': function_name,
+            'args': args,
+            'kwargs': kwargs,
+            'result': result
+        }
+        # Логируем информацию с детализированным выводом
+        logger.info(f"Function: {info_dict['function']}, Arguments: {info_dict['args']}, "
+                    f"Keyword Arguments: {info_dict['kwargs']}, Result: {info_dict['result']}")
+        return result
 
     return wrapper
 
-# Пример использования
-@log_function_call
-def add(a, b):
-    return a + b
 
-@log_function_call
-def divide(a, b):
-    return a / b
+@my_logger
+def get_all(num1: int, *args, **kwargs) -> int:
+    return num1
 
-if __name__ == "__main__":
-    add(10, 20)
-    try:
-        divide(10, 0)  # Пример с делением на ноль
-    except ZeroDivisionError:
-        pass
+
+if __name__ == '__main__':
+    # Пример вызова функции
+    get_all(5, 2, 3, 'str', x=5, y=8)
+
 
